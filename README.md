@@ -1,145 +1,190 @@
-# 🔬 Functional Group Atlas (FGA) Design Framework
+# Functional-Group Atlas for Interface Programming (FGA)
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.placeholder.svg)](https://doi.org/10.5281/zenodo.placeholder)
-[![Python](https://img.shields.io/badge/Python-3.10-blue.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Status](https://img.shields.io/badge/status-active-brightgreen.svg)]()
 
-> **A data-driven, machine learning-assisted design paradigm for programming interfacial wettability and heat transport in thermal energy storage materials.**
+A compact, publication-grade machine-learning workflow to construct a **data-driven functional-group atlas** for **carbon–molten salt interfacial design**, enabling predictable tuning of:
 
-This repository contains the source code and datasets for the manuscript: **"A data-driven functional-group atlas for programming interfacial wettability and heat transport for thermal energy storage"**.
+- **Interfacial wettability** → target: **Eb**
+- **Interfacial heat-transport potential** → target: **NVOA**
 
-The framework introduces a **feature deconstruction** strategy, resolving surface modifiers into independent "elemental" and "structural" dimensions. By integrating Density Functional Theory (DFT), Ab Initio Molecular Dynamics (AIMD), and Two-Tier Stacking Ensemble Learning, this workflow decouples the entangled properties of interfacial wettability ($E_b$) and thermal conductivity (NVOA).
-
----
-
-## ✨ Highlights
-
-*   **Dimensional Decoupling**: Implements a novel encoding strategy to separate chemical composition from geometric topology, revealing physical orthogonality in material performance.
-*   **Hierarchical Feature Engineering**: Features a rigorously automated "Filter-Embedded-Wrapper" pipeline utilizing Mutual Information, SHAP-based importance, and Recursive Feature Elimination (RFE).
-*   **Robust Stacking Ensemble**: A two-tier architecture combining heterogeneous base learners (XGBoost, CatBoost, ExtraTrees, etc.) with an **ElasticNet meta-learner**, validated via 100-seed nested cross-validation.
-*   **Interpretable AI**: Incorporates **Unified Feature Importance (UFI)** analysis to quantify physicochemical drivers, bridging the gap between black-box ML and physical intuition.
+The workflow is implemented in two Jupyter notebooks:
+1) hierarchical **feature engineering**  
+2) **Bayesian optimization → stacking ensemble → robustness evaluation → SHAP interpretation → prediction**
 
 ---
 
-## 🛠️ System Requirements & Installation
+## What’s inside
 
-### Prerequisites
-*   **OS**: Windows 10/11 (Tested), Linux (Ubuntu 20.04+), or macOS.
-*   **Python**: Version 3.10.x recommended.
-*   **Hardware**: Standard workstation (≥16GB RAM recommended for Stacking ensembles).
+- **Script A — Feature Engineering** (`Feature engineering-FGA.ipynb`)  
+  A three-stage selection strategy: **Filter (Pearson) → Embedded (RF-SHAP) → Wrapper (SHAP-guided elimination with early stopping)**.
 
-### Installation
-We recommend using [Conda](https://docs.conda.io/en/latest/) to manage dependencies and ensure reproducibility.
-
-```bash
-# Clone the repository
-git clone https://github.com/Gremelody/functional-group-atlas.git
-cd functional-group-atlas
-
-# Create the environment from the lock file (Recommended for exact reproducibility)
-conda create --name fga-env --file spec-file.txt
-
-# Activate the environment
-conda activate fga-env
-```
-
-*Alternatively, for a minimal setup:*
-```bash
-pip install -r requirements.txt
-```
+- **Script B — Stacking & Prediction** (`Tree_stacking-FGA.ipynb`)  
+  - Bayesian hyperparameter optimization for multiple tree regressors  
+  - OOF stacking with **ElasticNet** meta-learner  
+  - Robustness evaluation via repeated outer CV (multi-seed)  
+  - **Two-Level Weighted SHAP** global importance export  
+  - One-click prediction for unseen candidates
 
 ---
 
-## 📂 Repository Structure
-
-The workflow is organized into two parallel pipelines corresponding to the dual physical targets: **Binding Energy ($E_b$)** and **Vibrational Density of States Overlap Area (NVOA)**.
-
-```text
+## Repository layout (minimal)
 .
-├── Binding_Energy_Eb/                  # 💧 Target 1: Interfacial Wettability
-│   ├── Feature Engineering-Eb.ipynb    # Stage 1: Hierarchical feature selection
-│   ├── Tree_stacking-Eb.ipynb          # Stage 2: Optimization, Stacking & Prediction
-│   ├── Final_engineered_dataset.xlsx   # Processed dataset (Output of Stage 1)
-│   └── prediction-FGA-Eb.xlsx          # External candidate library for screening
-│
-├── NVOA_Phonon/                        # 🌡️ Target 2: Heat Transport
-│   ├── Feature Engineering-NVOA.ipynb  # Stage 1: Hierarchical feature selection
-│   ├── Tree_stacking-NVOA.ipynb        # Stage 2: Optimization, Stacking & Prediction
-│   ├── Final_engineered_dataset.xlsx   # Processed dataset (Output of Stage 1)
-│   └── prediction-FGA-NVOA.xlsx        # External candidate library for screening
-│
-├── data/                               # 🧬 Raw Data
-│   ├── Original database-FGA.xlsx      # Master database with 69 quantum-chemical descriptors
-│   └── Feature_Definitions.md          # Description of elemental/structural features
-│
-├── spec-file.txt                       # Exact Conda environment specification
-└── README.md                           # Documentation
+├── Feature engineering-FGA.ipynb
+├── Tree_stacking-FGA.ipynb
+├── Original database-FGA.xlsx # user-provided raw database (features + Eb + NVOA)
+├── prediction-FGA-Eb.xlsx # user-provided prediction set (features only)
+├── prediction-FGA-NVOA.xlsx # user-provided prediction set (features only)
+├── feature_engineering_output/ # auto-generated by Script A
+├── SHAP_Analysis_Results.xlsx # auto-generated by Script B
+├── unknown_predictions_*.xlsx # auto-generated prediction outputs
+├── environment.yml / requirements.txt / spec-file.txt
+├── manuscript-functional group atlas.pdf # optional (paper)
+├── SI-functional group atlas.pdf # optional (supporting info)
+└── LICENSE
+
+---
+
+## Data contract (Excel)
+
+### 1) Raw database: `Original database-FGA.xlsx`
+**Default assumption in Script A**
+- **Column 0**: ID / name (optional but recommended)
+- **Columns 1 : -2**: feature descriptors (numeric)
+- **Last two columns**: targets (**Eb** and **NVOA**, order can be selected by index)
+
+You control which target is used via:
+- `TARGET_COLUMN_INDEX = -1` (last column)
+- `TARGET_COLUMN_INDEX = -2` (second-to-last column)
+
+### 2) Prediction files: `prediction-FGA-*.xlsx`
+- **Column 0**: ID / name
+- **Columns 1..end**: features (numeric)
+- Feature names should match training features whenever possible. The notebook includes column alignment logic; still, consistent naming is strongly recommended.
+
+---
+
+## Quickstart
+
+### 0) Environment
+Use **one** of the provided configs:
+
+```bash
+# Option A (simple)
+pip install -r requirements.txt
+
+# Option B (conda, recommended)
+conda env create -f environment.yml -n fga
+conda activate fga
+
 ```
+## Step 1 — Feature engineering (run twice)
+
+Open: `Feature engineering-FGA.ipynb`
+
+**Default key settings**
+- `INPUT_FILE = 'Original database-FGA.xlsx'`
+- `FEATURE_COLUMN_SLICE = '1:-2'`
+- `TARGET_COLUMN_INDEX = -1`  (switch to `-2` for the other target)
+- `PEARSON_CORR_THRESHOLD = 0.8`
+- `FILTER_METHOD_CRITERION = 'mutual_info'`
+- `SHAP_COARSE_SELECTION_PERCENT = 0.8`
+- `EARLY_STOPPING_PATIENCE = 50`
+- `KFOLD_SPLITS = 10`
+
+**Run A for NVOA**
+1. set `TARGET_COLUMN_INDEX = -1` (or whichever column corresponds to NVOA)
+2. Run all cells  
+3. Output (timestamped):  
+   `feature_engineering_output/Final_Selected_Dataset_YYYYMMDD_HHMMSS.xlsx`  
+4. Rename (recommended):  
+   `Final_engineered_dataset-FGA-NVOA.xlsx`
+
+**Run A for Eb**
+1. set `TARGET_COLUMN_INDEX = -2` (or whichever column corresponds to Eb)
+2. Run all cells  
+3. Rename output to:  
+   `Final_engineered_dataset-FGA-Eb.xlsx`
 
 ---
 
-## 🚀 Usage Guide
+## Step 2 — Training + evaluation + SHAP (run twice)
 
-The pipeline is modular. You may run the feature engineering and modeling steps independently.
+Open: `Tree_stacking-FGA.ipynb` and run **top → bottom**.
 
-### Step 1: Hierarchical Feature Engineering
-**Objective**: Distill high-dimensional quantum descriptors into an optimal, physically meaningful subset.
+### Part B-1: Bayesian hyperparameter tuning
+Set:
+- `EXCEL_FILE_PATH = 'Final_engineered_dataset-FGA-Eb.xlsx'`  
+  (or `Final_engineered_dataset-FGA-NVOA.xlsx`)
+- `X_COLS_SLICE = slice(1, -1)`
+- `Y_COLS_SLICE = -1`
+- `CV_N_SPLITS = 10`
+- `N_ITER_BAYESIAN = 30`
+- `ENABLED_MODELS = [...]`
 
-*   **Input**: `Original database-FGA.xlsx`
-*   **Script**: `Feature Engineering-*.ipynb`
-*   **Methodology**:
-    1.  **Filter**: Removal of collinear features via Pearson threshold (`0.8`) and Mutual Information maximization.
-    2.  **Embedded**: Coarse screening using Random Forest-based SHAP values.
-    3.  **Wrapper**: Iterative Recursive Feature Elimination (RFE) with early stopping based on $R^2$.
-*   **Output**: `Final_engineered_dataset-*.xlsx`
+### Part B-2: Stacking, robustness, Two-Level Weighted SHAP
+Key settings:
+- `N_SEEDS_FOR_EVALUATION = 100`
+- `N_SPLITS_OUTER_CV = 10`
+- `META_LEARNER_N_ITER_BAYESIAN = 50`
+- `OUTPUT_EXCEL_FILENAME = 'SHAP_Analysis_Results.xlsx'`
+- `WEIGHTING_METHOD = '1/RMSE'`
+- `PLOT_SHAP_SWARM_PLOT = True`
+- `SHAP_SWARM_SAMPLES_LIMIT = 5000`
 
-### Step 2: Stacking Ensemble & Prediction
-**Objective**: Train a robust predictive model and screen the functional group atlas.
+Outputs:
+- `SHAP_Analysis_Results.xlsx` (multi-sheet report: metrics + global importances + swarm data)
 
-*   **Input**: `Final_engineered_dataset-*.xlsx`
-*   **Script**: `Tree_stacking-*.ipynb`
-*   **Methodology**:
-    1.  **Bayesian Optimization**: Tunes hyperparameters for 7 base learners (XGB, LGBM, CatBoost, RF, etc.) using Gaussian Processes.
-    2.  **Stacking**: Trains Level-0 base models and a Level-1 ElasticNet meta-learner.
-    3.  **Validation**: Performs **100-seed nested cross-validation** to generate robust performance metrics and SHAP analysis.
-    4.  **Prediction**: Applies the ensemble to `prediction-FGA-*.xlsx` to identify high-performance candidates.
-*   **Output**: Performance logs, SHAP plots, and `unknown_predictions_*.xlsx`.
-
----
-
-## 📊 Data Description
-
-The `Original database-FGA.xlsx` contains 248 functional group candidates with 69 descriptors derived from DFT/AIMD calculations.
-
-| Feature Type | Dimensions | Description |
-| :--- | :--- | :--- |
-| **Elemental ($x_{elem}$)** | 40 | Intrinsic properties of terminal moieties (e.g., Electronegativity, Atomic Radius, Valency). |
-| **Structural ($x_{struct}$)** | 29 | Topological characteristics of the backbone (e.g., Gyration Radius, Geometric Inertia). |
-| **Targets ($y$)** | 2 | **$E_b$** (Adsorption Energy, eV) and **NVOA** (Normalized VDOS Overlap Area). |
+**Practical note (speed vs. fidelity):**
+- For a fast sanity check, set `N_SEEDS_FOR_EVALUATION = 5–10`.
+- SHAP beeswarm can be memory-intensive; keep `SHAP_SWARM_SAMPLES_LIMIT` and/or disable `PLOT_SHAP_SWARM_PLOT`.
 
 ---
 
-## 📜 Citation
+## Step 3 — Prediction on unseen candidates (run twice)
 
-If you use this code or data in your research, please cite our paper:
+In the same notebook (Part B-3), set:
+- `UNKNOWN_DATA_FILE = 'prediction-FGA-Eb.xlsx'`  
+  (or `prediction-FGA-NVOA.xlsx`)
+- `UNKNOWN_DATA_FILE_COLUMN_RANGE = (slice(None), slice(1, None))`  (skip ID column)
+- `REUSE_PRETRAINED_STACKING_MODEL = False` *(default: retrain in prediction mode)*
+
+Outputs:
+- `unknown_predictions_YYYYMMDD_HHMMSS.xlsx`  
+  Includes the final stacking prediction and individual base-learner predictions.
+
+---
+
+## Reproducibility checklist
+
+- Keep `DEFAULT_MODEL_RANDOM_STATE` consistent across scripts.
+- Run **B-1 → B-2 → B-3** in one session if you plan to reuse trained objects.
+- Record:
+  - notebook commit hash
+  - environment file used (`environment.yml` / `spec-file.txt`)
+  - `N_SEEDS_FOR_EVALUATION`, CV folds, and enabled model list
+
+---
+
+## License & correspondence
+
+Released under the **MIT License** (see `LICENSE`).
+
+For correspondence:  
+Prof. **Guangmin Zhou** (Tsinghua Shenzhen International Graduate School, Tsinghua University)  
+📧 guangminzhou@sz.tsinghua.edu.cn
+
+---
+
+## Citation (optional)
 
 ```bibtex
-@article{Zhu2026FGA,
-  title={A data-driven functional-group atlas for programming interfacial wettability and heat transport for thermal energy storage},
-  author={Zhu, Yifei and Wang, Tiansheng and Zhou, Guangmin},
-  journal={Submitted to Nature XXX},
-  year={2026},
-  doi={10.1038/s41xxx-xxx-xxxx-x}
+@article{zhu_functional_group_atlas,
+  title   = {A data-driven functional-group atlas for programming interfacial wettability and heat transport for thermal energy storage},
+  author  = {Zhu, Yifei and Wang, Tiansheng and Zhou, Guangmin},
+  journal = {Manuscript under review},
+  year    = {2026}
 }
-```
 
-## 📧 Contact
 
-For technical questions or collaboration inquiries, please contact:
-*   **Prof. Guangmin Zhou**: [guangminzhou@sz.tsinghua.edu.cn](mailto:guangminzhou@sz.tsinghua.edu.cn)
-*   **Yifei Zhu**: [zhuyifeiedu@126.com](mailto:zhuyifeiedu@126.com)
-
----
-
-**License**: [MIT](LICENSE)
-```
